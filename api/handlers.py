@@ -6,6 +6,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.hashing import Hasher
 from api.models import DeleteUserResponse
 from api.models import ShowUser
 from api.models import UpdatedUserResponse
@@ -59,7 +60,10 @@ async def _create_new_user(body: UserCreate, db) -> ShowUser:
         async with session.begin():
             user_dal = UserDAL(session)
             user = await user_dal.create_user(
-                name=body.name, surname=body.surname, email=body.email
+                name=body.name,
+                surname=body.surname,
+                email=body.email,
+                hashed_password=Hasher.get_password_hash(body.password),
             )
             return ShowUser(
                 user_id=user.user_id,
