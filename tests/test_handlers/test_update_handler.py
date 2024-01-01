@@ -3,8 +3,22 @@ from uuid import uuid4
 
 import pytest
 
+from db.models import PortalRole
+from tests.conftest import create_test_auth_headers_for_user
 
-async def test_update_user(client, create_user_in_database, get_user_from_database):
+
+@pytest.mark.parametrize(
+    "user_roles",
+    (
+        [PortalRole.ROLE_PORTAL_SUPERADMIN],
+        [PortalRole.ROLE_PORTAL_ADMIN],
+        [PortalRole.ROLE_PORTAL_USER],
+        [PortalRole.ROLE_PORTAL_USER, PortalRole.ROLE_PORTAL_SUPERADMIN],
+    ),
+)
+async def test_update_user(
+    client, create_user_in_database, get_user_from_database, user_roles
+):
     user_data = {
         "user_id": uuid4(),
         "name": "Nikolai",
@@ -12,6 +26,7 @@ async def test_update_user(client, create_user_in_database, get_user_from_databa
         "email": "lol@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": user_roles,
     }
     user_data_updated = {
         "name": "Ivan",
@@ -20,7 +35,9 @@ async def test_update_user(client, create_user_in_database, get_user_from_databa
     }
     await create_user_in_database(**user_data)
     resp = client.patch(
-        f"/user/?user_id={user_data['user_id']}", data=json.dumps(user_data_updated)
+        f"/user/?user_id={user_data['user_id']}",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data["email"]),
     )
     assert resp.status_code == 200
     resp_data = resp.json()
@@ -44,6 +61,7 @@ async def test_update_user_check_one_is_updated(
         "email": "lol@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     user_data_2 = {
         "user_id": uuid4(),
@@ -52,6 +70,7 @@ async def test_update_user_check_one_is_updated(
         "email": "ivan@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     user_data_3 = {
         "user_id": uuid4(),
@@ -60,6 +79,7 @@ async def test_update_user_check_one_is_updated(
         "email": "petr@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     user_data_updated = {
         "name": "Nikifor",
@@ -69,7 +89,9 @@ async def test_update_user_check_one_is_updated(
     for user_data in [user_data_1, user_data_2, user_data_3]:
         await create_user_in_database(**user_data)
     resp = client.patch(
-        f"/user/?user_id={user_data_1['user_id']}", data=json.dumps(user_data_updated)
+        f"/user/?user_id={user_data_1['user_id']}",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data_1["email"]),
     )
     assert resp.status_code == 200
     resp_data = resp.json()
@@ -183,23 +205,40 @@ async def test_update_user_validation_error(
         "email": "lol@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     await create_user_in_database(**user_data)
     resp = client.patch(
-        f"/user/?user_id={user_data['user_id']}", data=json.dumps(user_data_updated)
+        f"/user/?user_id={user_data['user_id']}",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data["email"]),
     )
     assert resp.status_code == expected_status_code
     resp_data = resp.json()
     assert resp_data == expected_detail
 
 
-async def test_update_user_id_validation_error(client):
+async def test_update_user_id_validation_error(client, create_user_in_database):
+    user_data = {
+        "user_id": uuid4(),
+        "name": "Nikolai",
+        "surname": "Sviridov",
+        "email": "lol@kek.com",
+        "is_active": True,
+        "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
+    }
+    await create_user_in_database(**user_data)
     user_data_updated = {
         "name": "Ivan",
         "surname": "Ivanov",
         "email": "cheburek@kek.com",
     }
-    resp = client.patch("/user/?user_id=123", data=json.dumps(user_data_updated))
+    resp = client.patch(
+        "/user/?user_id=123",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data["email"]),
+    )
     assert resp.status_code == 422
     data_from_response = resp.json()
     assert data_from_response == {
@@ -213,14 +252,28 @@ async def test_update_user_id_validation_error(client):
     }
 
 
-async def test_update_user_not_found_error(client):
+async def test_update_user_not_found_error(client, create_user_in_database):
+    user_data = {
+        "user_id": uuid4(),
+        "name": "Nikolai",
+        "surname": "Sviridov",
+        "email": "lol@kek.com",
+        "is_active": True,
+        "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
+    }
+    await create_user_in_database(**user_data)
     user_data_updated = {
         "name": "Ivan",
         "surname": "Ivanov",
         "email": "cheburek@kek.com",
     }
     user_id = uuid4()
-    resp = client.patch(f"/user/?user_id={user_id}", data=json.dumps(user_data_updated))
+    resp = client.patch(
+        f"/user/?user_id={user_id}",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data["email"]),
+    )
     assert resp.status_code == 404
     resp_data = resp.json()
     assert resp_data == {"detail": f"User with id {user_id} not found."}
@@ -234,6 +287,7 @@ async def test_update_user_duplicate_email_error(client, create_user_in_database
         "email": "lol@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     user_data_2 = {
         "user_id": uuid4(),
@@ -242,6 +296,7 @@ async def test_update_user_duplicate_email_error(client, create_user_in_database
         "email": "ivan@kek.com",
         "is_active": True,
         "hashed_password": "SampleHashedPass",
+        "roles": [PortalRole.ROLE_PORTAL_USER],
     }
     user_data_updated = {
         "email": user_data_2["email"],
@@ -249,7 +304,9 @@ async def test_update_user_duplicate_email_error(client, create_user_in_database
     for user_data in [user_data_1, user_data_2]:
         await create_user_in_database(**user_data)
     resp = client.patch(
-        f"/user/?user_id={user_data_1['user_id']}", data=json.dumps(user_data_updated)
+        f"/user/?user_id={user_data_1['user_id']}",
+        data=json.dumps(user_data_updated),
+        headers=create_test_auth_headers_for_user(user_data_1["email"]),
     )
     assert resp.status_code == 503
     assert (

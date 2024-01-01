@@ -6,6 +6,9 @@ from sqlalchemy.orm import sessionmaker
 
 import settings
 
+##############################################
+# BLOCK FOR COMMON INTERACTION WITH DATABASE #
+##############################################
 
 # create async engine for interaction with database
 engine = create_async_engine(
@@ -14,6 +17,7 @@ engine = create_async_engine(
     echo=True,
     execution_options={"isolation_level": "AUTOCOMMIT"},
 )
+
 # create session for the interaction with database
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
