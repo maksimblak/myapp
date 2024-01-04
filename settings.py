@@ -16,11 +16,11 @@ TEST_DATABASE_URL = env.str(
 
 
 HOST = "localhost"
-PORT = 8000
+URL = "https://2cd5ad6b519a32f2d52a6512c0b7c3a8@o4506003606339584.ingest.sentry.io/4506512537354240"
 
-APP_PORT = env.int("APP_PORT")
 SECRET_KEY: str = env.str("SECRET_KEY", default="secret_key")
 ALGORITHM: str = env.str("ALGORITHM", default="HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES: int = env.int("ACCESS_TOKEN_EXPIRE_MINUTES", default=30)
 
-SENTRY_URL: str = env.str("SENTRY_URL")
+APP_PORT = env.int("APP_PORT", default=8000)
+SENTRY_URL: str = env.str("SENTRY_URL", default=URL)

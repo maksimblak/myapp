@@ -8,11 +8,18 @@ from pydantic import constr
 from pydantic import EmailStr
 from pydantic import validator
 
-LETTER_MATCH_PATTERN = re.compile(r"^[а-яА-Яa-zA-Z]+$")
+#########################
+# BLOCK WITH API MODELS #
+#########################
+
+LETTER_MATCH_PATTERN = re.compile(r"^[а-яА-Яa-zA-Z\-]+$")
 
 
 class TunedModel(BaseModel):
-    orm_mode: bool = True
+    class Config:
+        """tells pydantic to convert even non dict obj to json"""
+
+        orm_mode = True
 
 
 class ShowUser(TunedModel):
@@ -33,7 +40,7 @@ class UserCreate(BaseModel):
     def validate_name(cls, value):
         if not LETTER_MATCH_PATTERN.match(value):
             raise HTTPException(
-                status_code=422, detail="Name should contain only letters"
+                status_code=422, detail="Name should contains only letters"
             )
         return value
 
@@ -41,7 +48,7 @@ class UserCreate(BaseModel):
     def validate_surname(cls, value):
         if not LETTER_MATCH_PATTERN.match(value):
             raise HTTPException(
-                status_code=422, detail="Surname should contain only letters"
+                status_code=422, detail="Surname should contains only letters"
             )
         return value
 
